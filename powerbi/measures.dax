@@ -1,0 +1,182 @@
+// ============================================================================
+//  WAREHOUSE OPERATIONS KPI DASHBOARD  --  DAX MEASURE LIBRARY
+// ----------------------------------------------------------------------------
+//  Paste into a table named  _Measures  (Home > Enter Data > blank table).
+//  Fact table: FactOrders  (from outputs/fact_orders_flat.csv, 99,441 rows)
+//  Date table: DimDate     (marked as the date table on [Date])
+//
+//  Convention: percentages return values out of 100 to match the published
+//  marts, so a card needs no extra formatting step. Every division uses
+//  DIVIDE() so an empty filter context yields BLANK(), never an error.
+// ============================================================================
+
+
+// ---------------------------------------------------------------- 1. VOLUME
+Total Orders = COUNTROWS ( FactOrders )
+
+Completed Orders = CALCULATE ( [Total Orders], FactOrders[is_delivered] = 1 )
+
+Cancelled Orders = CALCULATE ( [Total Orders], FactOrders[is_cancelled] = 1 )
+
+Pending Orders =
+CALCULATE (
+    [Total Orders],
+    FactOrders[order_status] IN { "processing", "approved", "invoiced", "created", "shipped" }
+)
+
+Unavailable Orders = CALCULATE ( [Total Orders], FactOrders[order_status] = "unavailable" )
+
+Total Units = SUM ( FactOrders[units] )
+
+
+// --------------------------------------------------------------- 2. REVENUE
+Revenue = SUM ( FactOrders[item_revenue] )
+
+Freight Cost = SUM ( FactOrders[freight_cost] )
+
+Order Value = [Revenue] + [Freight Cost]
+
+Average Order Value = DIVIDE ( [Revenue], [Total Orders] )
+
+Freight % of Revenue = DIVIDE ( [Freight Cost], [Revenue] ) * 100
+
+Revenue at Risk (Late) =
+CALCULATE ( [Revenue], FactOrders[is_delivered] = 1, FactOrders[is_on_time] = 0 )
+
+
+// -------------------------------------------------------------- 3. DELIVERY
+On-Time Deliveries = CALCULATE ( [Total Orders], FactOrders[is_on_time] = 1 )
+
+Delayed Deliveries = [Completed Orders] - [On-Time Deliveries]
+
+// Denominator is DELIVERED orders -- an order still in transit has no outcome
+// yet and must not dilute the metric. See docs/03_metric_definitions.md.
+On-Time Delivery % = DIVIDE ( [On-Time Deliveries], [Completed Orders] ) * 100
+
+Delivery Success Rate % = DIVIDE ( [Completed Orders], [Total Orders] ) * 100
+
+Cancellation Rate % = DIVIDE ( [Cancelled Orders], [Total Orders] ) * 100
+
+Avg Delivery Days = AVERAGE ( FactOrders[total_lead_days] )
+
+Avg Promised Days = CALCULATE ( AVERAGE ( FactOrders[promised_days] ), FactOrders[is_delivered] = 1 )
+
+Avg Promise Buffer Days =
+CALCULATE ( AVERAGE ( FactOrders[promise_buffer_days] ), FactOrders[is_delivered] = 1 )
+
+// Leg decomposition -- the attribution engine of the whole report
+Leg 1 Approval Days = AVERAGE ( FactOrders[leg1_approval_days] )
+Leg 2 Dispatch Days = AVERAGE ( FactOrders[leg2_dispatch_days] )
+Leg 3 Transit Days  = AVERAGE ( FactOrders[leg3_transit_days] )
+
+Leg 1 % of Lead Time = DIVIDE ( [Leg 1 Approval Days], [Avg Delivery Days] ) * 100
+Leg 2 % of Lead Time = DIVIDE ( [Leg 2 Dispatch Days], [Avg Delivery Days] ) * 100
+Leg 3 % of Lead Time = DIVIDE ( [Leg 3 Transit Days],  [Avg Delivery Days] ) * 100
+
+// Which leg is the bottleneck right now, in the current filter context?
+Bottleneck Leg =
+VAR L1 = [Leg 1 Approval Days]
+VAR L2 = [Leg 2 Dispatch Days]
+VAR L3 = [Leg 3 Transit Days]
+VAR MaxLeg = MAX ( L1, MAX ( L2, L3 ) )
+RETURN
+    SWITCH (
+        TRUE (),
+        MaxLeg = L3, "Transit (carrier)",
+        MaxLeg = L2, "Dispatch (fulfilment node)",
+        MaxLeg = L1, "Payment approval",
+        "n/a"
+    )
+
+
+// -------------------------------------------------------------- 4. CUSTOMER
+Avg CSAT = AVERAGE ( FactOrders[review_score] )
+
+Reviewed Orders = CALCULATE ( [Total Orders], NOT ISBLANK ( FactOrders[review_score] ) )
+
+Detractor Rate % =
+DIVIDE ( CALCULATE ( [Total Orders], FactOrders[review_score] <= 2 ), [Reviewed Orders] ) * 100
+
+Promoter Rate % =
+DIVIDE ( CALCULATE ( [Total Orders], FactOrders[review_score] >= 4 ), [Reviewed Orders] ) * 100
+
+// Orders that arrived, arrived on time, and did not draw a complaint.
+// Un-reviewed orders get the benefit of the doubt -- silence is not a complaint.
+Perfect Order Rate % =
+DIVIDE (
+    CALCULATE (
+        [Total Orders],
+        FactOrders[is_on_time] = 1,
+        FILTER ( FactOrders, ISBLANK ( FactOrders[review_score] ) || FactOrders[review_score] >= 4 )
+    ),
+    [Total Orders]
+) * 100
+
+// Excess detractors attributable to lateness, vs the on-time baseline rate.
+Excess Detractors from Lateness =
+VAR BaselineRate =
+    CALCULATE (
+        DIVIDE ( CALCULATE ( [Total Orders], FactOrders[review_score] <= 2 ), [Reviewed Orders] ),
+        FactOrders[is_on_time] = 1
+    )
+VAR LateOrders     = CALCULATE ( [Total Orders], FactOrders[is_delivered] = 1, FactOrders[is_on_time] = 0 )
+VAR LateDetractors = CALCULATE ( [Total Orders], FactOrders[is_delivered] = 1,
+                                 FactOrders[is_on_time] = 0, FactOrders[review_score] <= 2 )
+RETURN LateDetractors - ( LateOrders * BaselineRate )
+
+
+// ------------------------------------------------------- 5. TIME INTELLIGENCE
+Orders PM = CALCULATE ( [Total Orders], DATEADD ( DimDate[Date], -1, MONTH ) )
+
+Orders MoM % = DIVIDE ( [Total Orders] - [Orders PM], [Orders PM] ) * 100
+
+On-Time % PM = CALCULATE ( [On-Time Delivery %], DATEADD ( DimDate[Date], -1, MONTH ) )
+
+On-Time % MoM pts = [On-Time Delivery %] - [On-Time % PM]
+
+Revenue YTD = TOTALYTD ( [Revenue], DimDate[Date] )
+
+On-Time % 3M Avg =
+AVERAGEX ( DATESINPERIOD ( DimDate[Date], MAX ( DimDate[Date] ), -3, MONTH ), [On-Time Delivery %] )
+
+// Rolling 30-day service view for the daily operating rhythm
+On-Time % Rolling 30D =
+CALCULATE (
+    [On-Time Delivery %],
+    DATESINPERIOD ( DimDate[Date], MAX ( DimDate[Date] ), -30, DAY )
+)
+
+
+// ----------------------------------------------------------- 6. NODE RANKING
+Dispatch On-Time % = AVERAGE ( FactOrderLine[is_dispatch_on_time] ) * 100
+
+Fulfilment Efficiency Score = 0.5 * [Dispatch On-Time %] + 0.5 * [On-Time Delivery %]
+
+Node Rank = RANKX ( ALLSELECTED ( DimSeller[fulfilment_node] ), [Fulfilment Efficiency Score],, DESC )
+
+// Ranking on tiny samples is noise -- suppress nodes under 50 orders.
+Top Node Filter = IF ( [Total Orders] >= 50, [Fulfilment Efficiency Score], BLANK () )
+
+
+// ------------------------------------------------------ 7. CONDITIONAL FORMAT
+// Return hex strings; bind via Format > Font colour > fx > Field value.
+On-Time Status Colour =
+SWITCH (
+    TRUE (),
+    [On-Time Delivery %] >= 95, "#2E7D32",   // green  - on target
+    [On-Time Delivery %] >= 90, "#F9A825",   // amber  - watch
+    "#C62828"                                 // red    - breach
+)
+
+On-Time Status Icon =
+SWITCH (
+    TRUE (),
+    [On-Time Delivery %] >= 95, "▲ On target",
+    [On-Time Delivery %] >= 90, "■ Watch",
+    "▼ Breach"
+)
+
+// Dynamic subtitle so a filtered page always states what it is showing
+Report Header =
+"On-time " & FORMAT ( [On-Time Delivery %], "0.0" ) & "%  |  "
+    & FORMAT ( [Total Orders], "#,0" ) & " orders  |  bottleneck: " & [Bottleneck Leg]

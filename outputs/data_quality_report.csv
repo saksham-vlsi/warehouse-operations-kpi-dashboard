@@ -1,0 +1,20 @@
+rule_id,severity,rule_name,failing_rows,status
+TIM-02,BLOCK,Dispatched before the order was approved,1359,FAIL
+GRN-02,BLOCK,Orders with >1 review (fans out CSAT joins),555,FAIL
+TIM-01,BLOCK,Delivered before it was dispatched,23,FAIL
+CMP-01,BLOCK,Status=delivered but no delivery timestamp,8,FAIL
+TIM-03,BLOCK,Approved before it was purchased,0,PASS
+VAL-01,BLOCK,Negative or zero item price,0,PASS
+GRN-01,BLOCK,Duplicate order_id in orders (breaks order grain),0,PASS
+REF-03,BLOCK,Order lines referencing a missing seller,0,PASS
+REF-02,BLOCK,Order lines referencing a missing product,0,PASS
+REF-01,BLOCK,Order lines with no parent order,0,PASS
+CMP-03,WARN,Missing carrier handover timestamp,1783,FAIL
+REF-04,WARN,Orders with no order lines (no revenue attached),775,FAIL
+CMP-04,WARN,Product rows with no category assigned,610,FAIL
+VAL-02,WARN,Zero freight charged on a physical shipment,383,FAIL
+CMP-02,WARN,Missing payment approval timestamp,160,FAIL
+BIZ-01,WARN,Delivery lead time > 100 days (tail outliers),64,FAIL
+CMP-05,WARN,Products with zero/NULL weight (breaks freight-per-kg),6,FAIL
+BIZ-02,WARN,Promise date earlier than the purchase date,0,PASS
+VAL-03,WARN,Review score outside 1-5,0,PASS

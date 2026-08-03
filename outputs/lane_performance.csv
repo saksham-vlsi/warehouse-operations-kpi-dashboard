@@ -1,0 +1,23 @@
+lane_region,lane_type,order_lines,revenue,freight,freight_pct_of_revenue,avg_lead_days,avg_transit_days,on_time_pct
+Southeast -> Southeast,Intra-State,39032,3992649.85,521382.99,13.06,7.92,4.74,95.53
+Southeast -> Southeast,Intra-Region,27033,3167850.17,559944.91,17.68,13.78,10.45,91.42
+Southeast -> South,Inter-Region,12278,1393500.33,263160.14,18.88,14.86,11.52,93.77
+South -> Southeast,Inter-Region,9472,1367799.78,212805.55,15.56,12.83,9.42,95.4
+Southeast -> Northeast,Inter-Region,8786,1170536.17,274392.04,23.44,20.02,16.58,87.23
+Southeast -> Central-West,Inter-Region,5491,673537.05,120443.99,17.88,15.14,11.96,93.1
+South -> South,Intra-Region,2082,280348.17,44642.32,15.92,12.54,9.3,95.95
+Southeast -> North,Inter-Region,1739,258561.21,61759.69,23.89,22.65,19.28,90.64
+South -> South,Intra-State,1465,211890.59,23597.28,11.14,8.14,4.72,96.56
+Central-West -> Southeast,Inter-Region,987,120035.73,21831.98,18.19,11.75,8.76,96.59
+South -> Northeast,Inter-Region,954,218963.65,44702.09,20.42,21.86,18.14,87.47
+Northeast -> Southeast,Inter-Region,870,233455.77,28290.45,12.12,13.7,10.3,93.34
+South -> Central-West,Inter-Region,744,142608.19,24312.51,17.05,15.2,11.89,96.3
+Northeast -> Northeast,Intra-Region,324,93106.81,7818.26,8.4,16.31,12.83,90.6
+South -> North,Inter-Region,228,51262.44,10743.92,20.96,22.18,19.01,95.07
+Central-West -> Northeast,Inter-Region,189,25386.89,5824.84,22.94,19.72,16.44,88.71
+Northeast -> South,Inter-Region,174,50080.34,7213.83,14.4,17.25,13.41,90.53
+Northeast -> Northeast,Intra-State,152,36114.88,2382.91,6.6,8.97,5.58,91.89
+Central-West -> South,Inter-Region,149,17664.6,4298.79,24.34,15.37,12.38,92.47
+Central-West -> Central-West,Intra-Region,137,12565.45,2579.28,20.53,11.43,9.08,97.01
+Northeast -> Central-West,Inter-Region,134,33282.17,4137.05,12.43,15.94,12.23,90.91
+Central-West -> Central-West,Intra-State,107,8469.2,1127.11,13.31,6.15,2.95,95.33

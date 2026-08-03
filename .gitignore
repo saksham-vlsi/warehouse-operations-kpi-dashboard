@@ -1,0 +1,21 @@
+# Raw source data -- restored by data\download_data.ps1 (~63 MB, licensed CC BY-NC-SA)
+data/raw/*
+!data/raw/.gitkeep
+
+# Portable query engine -- restored by run_pipeline.ps1
+tools/*
+!tools/.gitkeep
+
+# Local database file -- rebuilt by the pipeline
+outputs/*.duckdb
+outputs/*.duckdb.wal
+
+# Power BI / Excel working files
+*.pbix.bak
+~$*.xlsx
+*.tmp
+
+# OS noise
+Thumbs.db
+.DS_Store
+desktop.ini

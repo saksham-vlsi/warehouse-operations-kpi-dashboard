@@ -1,0 +1,2 @@
+total_orders,completed_orders,cancelled_orders,pending_orders,unavailable_orders,total_revenue,total_freight_cost,avg_order_value,total_units,delivery_success_rate_pct,on_time_delivery_pct,delayed_deliveries,avg_delivery_days,avg_promised_days,avg_promise_buffer_days,avg_csat,detractor_rate_pct,promoter_rate_pct,perfect_order_rate_pct,states_served,window_start,window_end
+99441,96470,625,1729,609,13591643.7,2251909.54,136.68,112650,97.01,93.23,6534,12.52,24.37,11.88,4.071,15.09,76.62,74.47,27,2016-09-04,2018-10-17
